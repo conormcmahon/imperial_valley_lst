@@ -12,8 +12,8 @@
 #   n, number of values used in the regression (after cloud masking, etc.)
 #   slope, but masked to cases where p-value < 0.05
 #   r, but masked to cases where p-value < 0.05
-# Each file has 366 bands, which correspond to one day-of-year
-# Values in that band show regression outputs for that day and sensor
+# Each file has 366 bands, which correspond to one week-of-year
+# Values in that band show regression outputs for that week and sensor
 # Result is 4 * 7 = 28 files
 
 # Import required libraries
@@ -25,11 +25,11 @@ import glob
 import scipy
 
 # Set output directory and file name search parameters for input files
-output_directory = "D:/imperial_valley_ag_heat/modis/"
-output_names = ["_aqua_day_regression.tif",
-                "_aqua_night_regression.tif",
-                "_terra_day_regression.tif",
-                "_terra_night_regression.tif"]
+output_directory = "D:/imperial_valley_ag_heat/modis_weekly_averages/"
+output_names = ["_aqua_day_regression_week_avg.tif",
+                "_aqua_night_regression_week_avg.tif",
+                "_terra_day_regression_week_avg.tif",
+                "_terra_night_regression_week_avg.tif"]
 
 # Now, aggregate all output files into one file for visualization
 for output_name in output_names:
@@ -44,24 +44,24 @@ for output_name in output_names:
     # Initialize output raster lists
     all_slopes = []  
     all_p_value = []
-    all_day_counts = []  
+    all_week_counts = []  
     doys = []
 
-    # Load a particular day of year's data
+    # Load a particular week of year's data
     for filename in regression_filenames:
         print("  Loading file " + filename)
-        # Get day of year from filename
+        # Get week of year from filename
         file_basename = filename.split("\\")[-1]
         file_doy = file_basename.split("_")[1]
         # Load raster data
         residual_img = rxr.open_rasterio(filename)
-        # Add day of year as a coordinate for timeseries analysis
+        # Add week of year as a coordinate for timeseries analysis
         residual_img.assign_coords(doy = file_doy)
         residual_img.expand_dims(dim="doy")
         # Add the new data to the list
-        all_slopes.append(residual_img.data[0,:,:]) 
-        all_p_value.append(residual_img.data[3,:,:]) 
-        all_day_counts.append(residual_img.data[5,:,:]) 
+        all_slopes.append(residual_img.data[5,:,:])
+        all_p_value.append(residual_img.data[7,:,:]) 
+        all_week_counts.append(residual_img.data[8,:,:]) 
         doys.append(file_doy)
     
     # Stack data into an rioxarray and export
@@ -74,9 +74,9 @@ for output_name in output_names:
     all_p_value_stack.rio.write_crs(example_image.rio.crs, inplace=True)
     all_p_value_stack.rio.to_raster(output_directory + "p_value" + output_name) 
     #    Number of Good Scenes
-    all_day_counts_stack = xa.DataArray(all_day_counts, coords={'y':example_image['y'].values, 'x':example_image['x'].values, 'doy':doys}, dims=['doy', 'y', 'x'])
-    all_day_counts_stack.rio.write_crs(example_image.rio.crs, inplace=True)
-    all_day_counts_stack.rio.to_raster(output_directory + "day_counts" + output_name) 
+    all_week_counts_stack = xa.DataArray(all_week_counts, coords={'y':example_image['y'].values, 'x':example_image['x'].values, 'doy':doys}, dims=['doy', 'y', 'x'])
+    all_week_counts_stack.rio.write_crs(example_image.rio.crs, inplace=True)
+    all_week_counts_stack.rio.to_raster(output_directory + "week_counts" + output_name) 
 
     # Make a new copy of data which is masked based on p < 0.05 significance 
     #    Slope

@@ -18,12 +18,13 @@ import xarray as xa
 import glob
 import scipy
 import pymannkendall
+import pandas as pd
 
 # User Parameters
-data_directory = "D:/imperial_valley_ag_heat/modis_change_test/"
+data_directory = "D:/imperial_valley_ag_heat/modis_weekly_averages/"
 
 # Function to compute linear regression between residual values and years
-#   Returns, for each pixel and day-of-year, in this order:
+#   Returns, for each pixel and week-of-year, in this order:
 #      slope, intercept, r value, p-value, standard error, and number of good scenes
 def residual_linregress(residual, years):
     # Mask out NaN values
@@ -33,21 +34,20 @@ def residual_linregress(residual, years):
     num_good_values = np.sum(mask)
     if(num_good_values < 2):
         return np.array([np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, num_good_values])
-    # Wrapper around scipy linregress to use in apply_ufunc
     slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(years[mask], residual[mask])
     trend_mk, h_mk, p_mk, z_mk, tau_mk, s_mk, var_s_mk, slope_mk, intercept_mk = pymannkendall.original_test(residual, 0.05)
     return np.array([slope, intercept, r_value, p_value, std_err, slope_mk, intercept_mk, p_mk, num_good_values])
 
 # Search parameters to find MODIS files in data_directory
 #   Define list of search patterns for each combination of MODIS imagery
-search_patterns = [data_directory + "lst_day_????_aqua_out_366_resid",          # Aqua Daytime
-                   data_directory + "lst_night_????_aqua_out_366_resid",        # Aqua Nighttime
-                   data_directory + "lst_day_????_out_366_resid",               # Terra Daytime
-                   data_directory + "lst_night_????_out_366_resid"]             # Aqua Nighttime
-output_names = ["_aqua_day_regression.tif",
-                "_aqua_night_regression.tif",
-                "_terra_day_regression.tif",
-                "_terra_night_regression.tif"]
+search_patterns = [data_directory + "lst_day_????_aqua_out_366_resid_week_avg",          # Aqua Daytime
+                   data_directory + "lst_night_????_aqua_out_366_resid_week_avg",        # Aqua Nighttime
+                   data_directory + "lst_day_????_out_366_resid_week_avg",               # Terra Daytime
+                   data_directory + "lst_night_????_out_366_resid_week_avg"]             # Aqua Nighttime
+output_names = ["_aqua_day_regression_week_avg.tif",
+                "_aqua_night_regression_week_avg.tif",
+                "_terra_day_regression_week_avg.tif",
+                "_terra_night_regression_week_avg.tif"]
 
 # ******* Run all regressions *******
 # Iterate over 
@@ -58,12 +58,9 @@ for ind in range(0,4):
     # Open one file to reference CRS and coordinates
     example_file = rxr.open_rasterio(residual_filenames[0])
 
-    print("\nFirst, working on Terra Daytime imagery (10:30 AM)")
-    print("  Found ", len(residual_filenames), "files.")
-
-    # For each day-of-year, fit a linear regression predicting change in land surface temperature vs. year in the dataset
-    for day in range(0,366): #366):
-        print("\nBeginning to work on day of year ", day, " with pattern ", search_patterns[ind])
+    # For each week-of-year, fit a linear regression predicting change in land surface temperature vs. year in the dataset
+    for week in range(0,52): #366):
+        print("\nBeginning to work on week of year ", week, " with pattern ", search_patterns[ind])
         
         all_years = []  
         year_names = []
@@ -74,7 +71,7 @@ for ind in range(0,4):
             file_basename = filename.split("\\")[-1]
             file_year = file_basename.split("_")[2]
             # Load raster data
-            residual_img = rxr.open_rasterio(filename)[day,:,:]
+            residual_img = rxr.open_rasterio(filename)[week,:,:]
             # Fill 0 values with NA
             residual_img.data[residual_img.data == 0] = np.nan
             # Add year as a coordinate for timeseries analysis
@@ -102,11 +99,11 @@ for ind in range(0,4):
         # Transpose data to have bands first
         one_year_mean = one_year_mean.transpose('parameter','y','x')
         # Update band names
-        one_year_mean.attrs['long_name'] = ['slope', 'intercept', 'r_value', 'p_value', 'std_err', 'mk_slope', 'mk_intercept', 'mk_p_value', 'number_good_scenes']
+        one_year_mean.attrs['long_name'] = ['linreg_slope', 'linreg_intercept', 'linreg_r_value', 'linreg_p_value', 'linreg_std_err', 'mannkendall_slope', 'mannkendall_intercept', 'mannkendall_p_value', 'number_good_scenes']
         # Update coordinate reference system
         one_year_mean.rio.write_crs(example_file.rio.crs, inplace=True)
         # Write raster to disk
-        one_year_mean.rio.to_raster(data_directory + "doy_" + str(day).zfill(3) + output_names[ind]) 
+        one_year_mean.rio.to_raster(data_directory + "doy_" + str(week).zfill(3) + output_names[ind]) 
 
-        print("   Finished computing regression for day of year ", day)
+        print("   Finished computing regression for week of year ", week)
 

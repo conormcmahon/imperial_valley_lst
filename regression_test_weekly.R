@@ -1,13 +1,14 @@
 
 library(terra)
 library(tictoc)
+library(RobustLinearReg)
 
-file_list <- list.files("D:/imperial_valley_ag_heat/modis_change_test/", 
-                        pattern = "lst_day.*aqua_out_366_resid$", 
+file_list <- list.files("D:/imperial_valley_ag_heat/modis_weekly_averages/", 
+                        pattern = "lst_day.*aqua_out_366_resid_week_avg$", 
                         full.names = TRUE)
 
 # target day of year
-doy_target <- 240
+doy_target <- 30
 
 # Get list of years 
 #    Split list of filenames by '_' character, then pick the one corresponding to year in our file naming scheme
