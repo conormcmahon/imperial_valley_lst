@@ -74,4 +74,18 @@ names(average_classes) <- c("crop", "orchard", "fallow", "urban", "natural", "wa
 writeRaster(average_classes, "D:/imperial_valley_ag_heat/crops/CDL_datasets/class_averages.tif", overwrite=TRUE)
 
 
+# Get maps of sites which were usually one class
+mostly_crops <- (average_classes[[1]]+average_classes[[3]]) > 0.8
+mostly_orchards <- average_classes[[2]] > 0.8
+mostly_ag <- mostly_crops + mostly_orchards
+mostly_urban <- average_classes[[4]] > 0.8
+terra::writeRaster(mostly_crops, "D:/imperial_valley_ag_heat/crops/CDL_datasets/usually_crops.tif", overwrite=TRUE)
+terra::writeRaster(mostly_crops, "D:/imperial_valley_ag_heat/crops/CDL_datasets/usually_crops_envi", filetype="ENVI", overwrite=TRUE)
+terra::writeRaster(mostly_orchards, "D:/imperial_valley_ag_heat/crops/CDL_datasets/usually_orchard.tif", overwrite=TRUE)
+terra::writeRaster(mostly_orchards, "D:/imperial_valley_ag_heat/crops/CDL_datasets/usually_orchard_envi", filetype="ENVI", overwrite=TRUE)
+terra::writeRaster(mostly_ag, "D:/imperial_valley_ag_heat/crops/CDL_datasets/usually_ag.tif", overwrite=TRUE)
+terra::writeRaster(mostly_ag, "D:/imperial_valley_ag_heat/crops/CDL_datasets/usually_ag_envi", filetype="ENVI", overwrite=TRUE)
+terra::writeRaster(mostly_urban, "D:/imperial_valley_ag_heat/crops/CDL_datasets/usually_urban.tif", overwrite=TRUE)
+terra::writeRaster(mostly_urban, "D:/imperial_valley_ag_heat/crops/CDL_datasets/usually_urban_envi", filetype="ENVI", overwrite=TRUE)
+
 
